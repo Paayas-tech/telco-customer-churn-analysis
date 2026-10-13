@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import platform
 
+import joblib
 import numpy as np
 import pandas as pd
 import sklearn
@@ -19,6 +20,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 SEED = 42
 DATA = Path(__file__).resolve().parents[1] / "data/processed/cleaned_telco_churn.csv"
+MODEL_PATH = DATA.parents[2] / "models/baseline_logistic_pipeline.joblib"
 NUMERIC = ["tenure", "monthly_charges", "total_charges"]
 CATEGORICAL = [
     "gender", "senior_citizen", "partner", "dependents", "phone_service",
@@ -91,6 +93,45 @@ def evaluate(name, target, scores, predictions):
     }
 
 
+def report_coefficients(model):
+    """Match coefficients to transformed columns in their fitted output order."""
+    names = model.named_steps["preprocessing"].get_feature_names_out()
+    classifier = model.named_steps["classifier"]
+    if list(classifier.classes_) != [0, 1]:
+        raise ValueError("Coefficient direction requires class 1 to represent churn.")
+    coefficients = classifier.coef_[0]
+    if len(names) != len(coefficients):
+        raise ValueError("Transformed features and coefficients are misaligned.")
+    table = pd.DataFrame({"Feature": names, "Coefficient": coefficients})
+    for heading, positive in [("Top 5 Strongest Churn Drivers", True),
+                              ("Top 5 Strongest Retention Drivers", False)]:
+        # Filter by sign before ranking; keep exact transformed names for traceability.
+        drivers = table[table["Coefficient"] > 0] if positive else table[table["Coefficient"] < 0]
+        drivers = drivers.sort_values(
+            ["Coefficient", "Feature"], ascending=[not positive, True],
+        ).head(5)
+        print(f"\n{heading}")
+        print(drivers.to_string(index=False, float_format=lambda value: f"{value:+.4f}"))
+    print("Coefficients describe conditional log-odds associations, not causal effects.")
+    print("Numeric coefficients are per training-set standard deviation; categorical coefficients are per indicator.")
+    print("Correlated features and full one-hot encoding limit direct coefficient comparisons.")
+
+
+def persist_pipeline(model, test_features, expected_probabilities):
+    """Save the training-fitted pipeline and verify its prediction round trip."""
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, MODEL_PATH)
+    # Reload only this locally generated artifact and verify preprocessing is preserved.
+    restored = joblib.load(MODEL_PATH)
+    positive = list(restored.classes_).index(1)
+    np.testing.assert_allclose(
+        restored.predict_proba(test_features)[:, positive], expected_probabilities,
+        rtol=0, atol=0,
+    )
+    print(f"Saved pipeline: {MODEL_PATH}")
+    print("Reload verification: identical probabilities on all held-out test rows.")
+
+
 def main():
     # Resolve the CSV relative to this script so any working directory is supported.
     data = pd.read_csv(DATA, dtype=str)
@@ -143,7 +184,9 @@ def main():
     print("Precision/recall for no positive predictions are reported as 0.")
     print("Lower thresholds are preset scenarios, not validated business-optimal thresholds.")
     print("SQL heuristic is retrospective and uncalibrated; causal effects and future performance are unverified.")
-    print("No customer-level outputs or model files are written.")
+    report_coefficients(model)
+    persist_pipeline(model, x_test, probabilities)
+    print("No customer-level predictions are written; pipeline remains fitted only on training rows.")
 
 
 if __name__ == "__main__":
