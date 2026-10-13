@@ -98,12 +98,69 @@ Run from the repository root with `data/processed/cleaned_telco_churn.csv` avail
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r python/requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r app/requirements.txt
 .\.venv\Scripts\python.exe python/train_baseline.py
 .\.venv\Scripts\python.exe python/predict.py
 ```
 
-The five direct dependencies are pandas, numpy, scikit-learn, joblib, and matplotlib; their versions are pinned in `python/requirements.txt`.
+For the baseline and service, `app/requirements.txt` pins pandas, numpy, scikit-learn, joblib, FastAPI, and Uvicorn. Use Python 3.12 or newer for these pins. `python/requirements.txt` records the broader development dependency set.
+
+---
+
+## Production Microservice & Containerization
+
+The FastAPI service packages the persisted baseline pipeline in a **Python 3.12 slim** container. Install Docker with Compose and run from the repository root. Before building, ensure the trusted local artifact `models/baseline_logistic_pipeline.joblib` exists: it is ignored by Git and is not included in a fresh clone. Generate it with `python/train_baseline.py` using the ML dependencies documented above.
+
+Launch the service in one command:
+
+```bash
+docker compose up --build -d
+```
+
+Compose builds the image, publishes port 8000, applies `unless-stopped` restart behavior, and checks `/health`. The image copies the API and model artifact; it does not bundle the customer CSV. Dependency installation uses `app/requirements.txt` as a cached build layer.
+
+| Endpoint | Purpose |
+| :--- | :--- |
+| `GET /health` | Service/model readiness check; returns `{"status": "healthy"}` after model initialization. |
+| `GET /analytics/summary` | Static cohort churn/retention context and MRR benchmarks: 7,043 customers, 26.54% churn, and $183,535.15 flagged monthly exposure at 0.35. These are retrospective snapshot figures, not live cohort calculations. |
+| `POST /predict-risk` | Request-time churn probability, risk tier, high-risk flag, and monthly exposure for one validated account. |
+
+Swagger interactive documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs). Select `POST /predict-risk`, click **Try it out**, and submit this synthetic JSON example (no customer ID or observed churn label is required):
+
+```json
+{
+  "gender": "Female",
+  "senior_citizen": 1,
+  "partner": "No",
+  "dependents": "No",
+  "tenure": 6,
+  "phone_service": "Yes",
+  "multiple_lines": "No",
+  "internet_service": "Fiber optic",
+  "online_security": "No",
+  "online_backup": "No",
+  "device_protection": "No",
+  "tech_support": "No",
+  "streaming_tv": "Yes",
+  "streaming_movies": "Yes",
+  "contract": "Month-to-month",
+  "paperless_billing": "Yes",
+  "payment_method": "Electronic check",
+  "monthly_charges": 85.0,
+  "total_charges": 510.0
+}
+```
+
+The response contains `churn_probability`, `risk_tier`, `is_high_risk`, and `revenue_at_risk`. High risk is probability >=0.35; Moderate is >=0.20 and <0.35; Low is <0.20. The Moderate boundary is a display policy, not a separately validated threshold. Exposure equals monthly charges for high-risk accounts and zero otherwise, not probability-weighted expected loss. Invalid input receives HTTP 422; missing or incompatible model artifacts prevent startup.
+
+Inspect status and stop the service with:
+
+```bash
+docker compose ps
+docker compose down
+```
+
+The service currently has no authentication or TLS configuration; use it locally or behind an appropriately secured deployment boundary. Model probabilities and the chosen cutoff retain the retrospective limitations described above.
 
 ---
 
@@ -121,6 +178,7 @@ The five direct dependencies are pandas, numpy, scikit-learn, joblib, and matplo
 * **SQL Capabilities:** Window Functions (`NTILE`, `SUM OVER`, `ROW_NUMBER`), Statistical Aggregations (`PERCENTILE_CONT`, `STDDEV`), PL/pgSQL Stored Functions
 * **Visualization & Reporting:** Google Sheets (Pivot Tables, Calculated Fields, Executive Dashboard)
 * **Machine Learning:** Python, pandas, numpy, scikit-learn, joblib, matplotlib
+* **Serving & Containerization:** FastAPI, Pydantic, Uvicorn, Docker Compose
 * **Version Control:** Git & GitHub
 
 ---
@@ -131,6 +189,13 @@ The five direct dependencies are pandas, numpy, scikit-learn, joblib, and matplo
 telco-customer-churn-analysis/
 ├── README.md
 ├── .gitignore
+├── Dockerfile
+├── docker-compose.yml
+├── app/
+│   ├── main.py
+│   ├── schemas.py
+│   ├── requirements.txt
+│   └── test_api.py
 ├── dashboards/
 │   └── dashboard_preview.png
 ├── data/
