@@ -1,1 +1,20 @@
 ﻿data/raw/*.csv
+
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Environment Variables & Secrets
+.env
+
+# Python Cache & Jupyter Checkpoints
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# ML Models & Predictions
+models/*.joblib
+models/*.pkl
+data/predictions/*.csv
