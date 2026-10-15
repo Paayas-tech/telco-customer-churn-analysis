@@ -31,7 +31,7 @@ Revenue figures describe the full retrospective snapshot, including training row
 
 [Overall dashboard PDF](docs/dashboard_overall.pdf) · [Month-to-month cohort PDF](docs/dashboard_month_to_month.pdf) · [Live Google Sheets dashboard](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing)
 
-The Power BI previews are static exports. The Month-to-month PDF shows a contract slice containing both risk classes; live Power BI interaction has not been verified.
+The Power BI previews are static exports. The Month-to-month PDF shows a contract slice containing both risk classes. Desktop cross-filtering was tested and verified by the project author.
 
 ## Architecture
 
@@ -51,7 +51,7 @@ Raw CSV -> PostgreSQL -> Cleaned CSV -> Python ML pipeline
 
 Python currently reads the local cleaned CSV; it does not query PostgreSQL directly. Power BI consumes a documented one-row-per-customer merge of cleaned and scored exports. The saved preprocessor/model is reused by batch scoring and the API without refitting; Google Sheets remains a separate reporting artifact.
 
-**Artifact status:** SQL, Python scoring, the API, Docker configuration, the Google Sheets dashboard, and exported Power BI dashboard PDFs/PNG previews are available. The exports show the completed baseline and Month-to-month views. No Power BI `.pbix` is bundled; interactive behavior and the live semantic model have not been inspected.
+**Artifact status:** SQL, Python scoring, the API, Docker configuration, the Google Sheets dashboard, and exported Power BI dashboard PDFs/PNG previews are available. The exports show the completed baseline and Month-to-month views. Desktop cross-filtering was tested and verified by the project author. The complete Power BI model is bundled at [pbix/Telco_Revenue_Risk_Dashboard.pbix](pbix/Telco_Revenue_Risk_Dashboard.pbix). The semantic model has not been independently inspected here.
 
 ## Problem Statement & Business Context
 
@@ -127,9 +127,9 @@ Format `Churn Rate` as a percentage (two decimals), counts as integers, and MRR 
 
 ## View or Build the Power BI Report
 
-The intended file is `pbix/Telco_Revenue_Risk_Dashboard.pbix`. It is not bundled yet; [pbix/README.md](pbix/README.md) explains the placeholder.
+Open the bundled [Telco Revenue Risk Dashboard](pbix/Telco_Revenue_Risk_Dashboard.pbix) in Power BI Desktop. See [report notes](pbix/README.md) for refresh guidance.
 
-When available, open it in Power BI Desktop, update local CSV source paths in Power Query, and refresh. To build from scratch, follow [docs/power_bi_setup.md](docs/power_bi_setup.md), import the DAX measures, configure the visuals/interactions, and save the report under `pbix/`. No local Excel dashboard is required.
+Update local CSV source paths in Power Query and refresh before comparing totals. To build from scratch, follow [docs/power_bi_setup.md](docs/power_bi_setup.md), import the DAX measures, configure the visuals/interactions, and save the report under `pbix/`. No local Excel dashboard is required.
 
 ## Repository Structure
 
@@ -150,7 +150,8 @@ telco-customer-churn-analysis/
 │   ├── dashboard_overall.pdf
 │   └── dashboard_month_to_month.pdf
 ├── pbix/
-│   └── README.md               # planned: Telco_Revenue_Risk_Dashboard.pbix
+│   ├── README.md
+│   └── Telco_Revenue_Risk_Dashboard.pbix
 ├── dax/
 │   └── measures.dax
 ├── dashboards/

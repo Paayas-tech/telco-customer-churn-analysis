@@ -2,7 +2,7 @@
 
 Status: baseline and Month-to-month report exports are now available: [overall PDF](dashboard_overall.pdf), [Month-to-month PDF](dashboard_month_to_month.pdf), [overall PNG](../images/dashboard_overview.png), and [Month-to-month PNG](../images/dashboard_sliced_risk.png). Both PNGs are first-page renders at 200 DPI. The exports show report cards, slicers, a contract churn chart, risk distribution, and a formatted action table.
 
-The overall export shows 7,043 accounts, 26.54% churn, $456.12K MRR, and $183.54K exposure. The Month-to-month export shows 3,875 accounts, 42.71% churn, $257.29K MRR, and $179.76K exposure. The latter is a contract slice, not a high-risk-only slice. The guide below documents setup/reproduction; a PBIX and live interactions have not been inspected, and the authored DAX still needs validation against the actual semantic model.
+The overall export shows 7,043 accounts, 26.54% churn, $456.12K MRR, and $183.54K exposure. The Month-to-month export shows 3,875 accounts, 42.71% churn, $257.29K MRR, and $179.76K exposure. The latter is a contract slice, not a high-risk-only slice. The guide below documents setup/reproduction; desktop cross-filtering was tested and verified by the project author. The complete editable model is bundled at [pbix/Telco_Revenue_Risk_Dashboard.pbix](../pbix/Telco_Revenue_Risk_Dashboard.pbix); its semantic model has not been independently inspected here. The authored DAX still needs validation against the actual semantic model.
 
 ## Prepare and join the inputs
 
@@ -33,7 +33,7 @@ Baseline: 7,043 customers; 1,869 historical churners; churn 26.54%; total MRR $4
 
 With only a contract filter: Month-to-month churn 42.71%; One year 11.27%; Two year 2.83%. With combined filters, compare to the same filtered source cohort rather than these baseline values. Because measures respect filter context, selecting a churn label changes the denominator cohort too.
 
-Check conditional formats, probability sort, slicer clearing, row uniqueness, and no missing scores. The supplied PDF exports and their PNG renders are complete. Save the editable report as `pbix/Telco_Revenue_Risk_Dashboard.pbix` when available. For future exports, retain the canonical `images/dashboard_overview.png` and `images/dashboard_sliced_risk.png` paths; see `images/README.md`.
+Check conditional formats, probability sort, slicer clearing, row uniqueness, and no missing scores. The supplied PDF exports and their PNG renders are complete. The editable report is bundled at [pbix/Telco_Revenue_Risk_Dashboard.pbix](../pbix/Telco_Revenue_Risk_Dashboard.pbix). Save any report changes back to that path. For future exports, retain the canonical `images/dashboard_overview.png` and `images/dashboard_sliced_risk.png` paths; see `images/README.md`.
 
 To reopen an existing PBIX, update source paths in Power Query and refresh before comparing totals. Review embedded data before sharing; report screenshots should mask identifiers.
 
