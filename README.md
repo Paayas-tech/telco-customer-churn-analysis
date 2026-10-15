@@ -1,9 +1,9 @@
 # Telco Churn & Revenue Risk
 
-![Power BI](https://img.shields.io/badge/Power_BI-Report_Design-F2C811?style=flat&logo=powerbi&logoColor=black)
-![DAX](https://img.shields.io/badge/DAX-Measures-F2C811)
-![Python / ML Scoring](https://img.shields.io/badge/Python-ML_Scoring-3776AB?logo=python&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Analytics-4169E1?logo=postgresql&logoColor=white)
+[![Power BI](https://img.shields.io/badge/Power_BI-Report_Design-F2C811?style=flat&logo=powerbi&logoColor=black)](#dashboard-preview)
+[![DAX](https://img.shields.io/badge/DAX-Measures-F2C811)](#core-dax-measures)
+[![Python / ML Scoring](https://img.shields.io/badge/Python-ML_Scoring-3776AB?logo=python&logoColor=white)](#python-baseline-ml-pipeline)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Analytics-4169E1?logo=postgresql&logoColor=white)](#problem-statement--business-context)
 
 Connect executive revenue-risk reporting with reproducible machine-learning churn scoring to identify accounts for retention review.
 
