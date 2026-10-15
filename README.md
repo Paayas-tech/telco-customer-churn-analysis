@@ -5,7 +5,51 @@
 ![Python / ML Scoring](https://img.shields.io/badge/Python-ML_Scoring-3776AB?logo=python&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Analytics-4169E1?logo=postgresql&logoColor=white)
 
-Executive revenue-risk tracking connected to reproducible customer churn scoring. PostgreSQL supports historical segmentation, Python estimates churn risk, and the reporting layer turns model flags into recurring-revenue exposure and a proposed retention action queue. FastAPI and Docker provide request-time scoring.
+Connect executive revenue-risk reporting with reproducible machine-learning churn scoring to identify accounts for retention review.
+
+## Impact at a Glance
+
+- **$183.54K flagged monthly revenue exposure** across 2,357 accounts at the 0.35 cutoff; exposure is not realized or guaranteed loss.
+- **$456.12K total MRR** in the historical snapshot.
+- **7,043 customers**, including 1,869 historical churners (26.54%).
+- **42.71% Month-to-month churn**, versus 11.27% for one-year and 2.83% for two-year contracts.
+- **70.59% test recall at the 0.35 cutoff**: 264 of 374 test churners identified, with 222 false positives.
+- **0.842 ROC-AUC** and **0.6337 Average Precision** on the stratified 20% test fold.
+
+Revenue figures describe the full retrospective snapshot, including training rows and historical churners; model performance describes the held-out test fold. The 0.35 cutoff was a preset comparison, not a separately optimized or cost-validated threshold.
+
+## What This Project Does
+
+- **Find churn patterns:** compare contracts, internet services, and tenure using SQL analytics.
+- **Rank account risk:** train a reproducible baseline and score customers by churn probability.
+- **Translate risk into revenue exposure:** flag monthly charges for a proposed retention review queue.
+- **Make findings usable:** provide executive Power BI exports, documented DAX measures, and a containerized prediction API.
+
+## Dashboard Preview
+
+[![Power BI executive dashboard: overall customer and revenue-risk baseline](images/dashboard_overview.png)](docs/dashboard_overall.pdf)
+
+[Overall dashboard PDF](docs/dashboard_overall.pdf) · [Month-to-month cohort PDF](docs/dashboard_month_to_month.pdf) · [Live Google Sheets dashboard](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing)
+
+The Power BI previews are static exports. The Month-to-month PDF shows a contract slice containing both risk classes; live Power BI interaction has not been verified.
+
+## Architecture
+
+```text
+Raw CSV -> PostgreSQL -> Cleaned CSV -> Python ML pipeline
+           staging,                      |
+           cleaning, SQL                 +-> Scored CSV + cleaned data
+                                         |        |
+                                         |        v
+                                         |   Power BI / DAX -> Executive risk views
+                                         |
+                                         +-> Saved pipeline (.joblib)
+                                                  |
+                                                  v
+                                             FastAPI -> Docker service
+```
+
+Python currently reads the local cleaned CSV; it does not query PostgreSQL directly. Power BI consumes a documented one-row-per-customer merge of cleaned and scored exports. The saved preprocessor/model is reused by batch scoring and the API without refitting; Google Sheets remains a separate reporting artifact.
 
 **Artifact status:** SQL, Python scoring, the API, Docker configuration, the Google Sheets dashboard, and exported Power BI dashboard PDFs/PNG previews are available. The exports show the completed baseline and Month-to-month views. No Power BI `.pbix` is bundled; interactive behavior and the live semantic model have not been inspected.
 
@@ -31,7 +75,7 @@ Multiplying churn-associated monthly charges by 12 gives $1,669,570.20 (approxim
 
 **Proposed action queue:** filter to high-risk, currently eligible retained customers (`churn = "No"` in this historical dataset), then prioritize tenure **<3 months** and monthly charges **$80–$95 inclusive**. Sort by churn probability descending, then monthly charges descending. This is a proposed business targeting rule, not a statistically optimized or proven highest-impact segment. Do not contact historical churners as if they were active subscribers.
 
-## Dashboard Preview & Interactive Walkthrough
+## Dashboard Details & Interactive Walkthrough
 
 [![Existing Google Sheets dashboard preview](dashboards/dashboard_preview.png)](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing)
 
@@ -49,9 +93,7 @@ Build/verify these Power BI interactions using [the report setup guide](docs/pow
 
 **Overall baseline** — 7,043 customers, 26.54% churn, $456.12K MRR, $183.54K exposure.
 
-[![Power BI overall dashboard](images/dashboard_overview.png)](docs/dashboard_overall.pdf)
-
-[Open overall PDF](docs/dashboard_overall.pdf).
+[Open overall PDF](docs/dashboard_overall.pdf) or use the preview at the top of this page.
 
 **Month-to-month cohort** — 3,875 customers, 42.71% churn, $257.29K MRR, $179.76K exposure. The shown filter is contract only; the cohort contains both risk classes.
 
