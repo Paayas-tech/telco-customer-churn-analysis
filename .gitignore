@@ -1,4 +1,4 @@
-﻿data/raw/*.csv
+data/raw/*.csv
 
 # Virtual Environment
 .venv/
@@ -18,3 +18,29 @@ __pycache__/
 models/*.joblib
 models/*.pkl
 data/predictions/*.csv
+
+# Power BI local settings, caches, and recovery files (normal .pbix files allowed)
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+**/.pbi/unappliedChanges.json
+**/AutoRecovery/
+**/AutoSave/
+*.pbix.autosave*
+*.pbix.tmp
+*.pbix.bak
+~$*.pbix
+
+# Editor/OS temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+*.swp
+*.swo
+~$*
+.pytest_cache/
+.coverage
+htmlcov/
+.env.*
+!.env.example

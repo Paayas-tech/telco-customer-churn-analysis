@@ -1,64 +1,148 @@
-# Telco Customer Churn & Revenue Exposure Analysis
+# Telco Churn & Revenue Risk
 
-An end-to-end data analytics project diagnosing customer churn dynamics, quantifying recurring revenue leakage, and deploying automated risk-scoring logic using **PostgreSQL**, a **Python machine-learning pipeline**, and a live **Google Sheets dashboard**.
+![Power BI](https://img.shields.io/badge/Power_BI-Report_Design-F2C811?style=flat&logo=powerbi&logoColor=black)
+![DAX](https://img.shields.io/badge/DAX-Measures-F2C811)
+![Python / ML Scoring](https://img.shields.io/badge/Python-ML_Scoring-3776AB?logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Analytics-4169E1?logo=postgresql&logoColor=white)
 
----
+Executive revenue-risk tracking connected to reproducible customer churn scoring. PostgreSQL supports historical segmentation, Python estimates churn risk, and the reporting layer turns model flags into recurring-revenue exposure and a proposed retention action queue. FastAPI and Docker provide request-time scoring.
 
-## 📌 Executive Summary
+**Artifact status:** SQL, Python scoring, the API, Docker configuration, the Google Sheets dashboard, and exported Power BI dashboard PDFs/PNG previews are available. The exports show the completed baseline and Month-to-month views. No Power BI `.pbix` is bundled; interactive behavior and the live semantic model have not been inspected.
 
-* **Customer vs. Revenue Disconnect:** The business has an overall customer churn rate of **26.54%** (1,869 / 7,043 customers), while **30.50% of snapshot Monthly Recurring Revenue (MRR)** is associated with churned accounts ($139,130.85 out of $456,116.60). This is a snapshot revenue share, not an annual churn rate.
-* **Annualized Revenue Leakage:** Multiplying churned accounts' monthly charges by 12 gives approximately **$1.67M annualized** ($1,669,570.20). This extrapolation is not a measured annual loss or a forecast. Departing customers represent higher-paying accounts ($74.44/mo average churned vs. $61.26/mo retained).
-* **Concentration of Risk:** Customers paying at least $70/month have **35.48% churn** (1,274 / 3,591); the lowest spending decile has **8.37% churn**. The 38.07% rate belongs to Decile 6, not the entire $70+ segment. The top 500 departing accounts alone drive **$50,400.10/month** (36.2% of all lost MRR).
+## Problem Statement & Business Context
 
----
+Telecommunications businesses depend on recurring subscription revenue. Customer churn affects account volumes and revenue differently: higher monthly charges can concentrate exposure in a relatively small group. This project asks who churns, which segments correlate with churn, and which accounts should enter a retention review queue.
 
-## 📊 Executive Dashboard Preview
+Historical churn, model flags, and revenue exposure are distinct concepts. A risk flag is not an observed departure, and flagged MRR is not a guaranteed loss or retention opportunity. Outreach recommendations require a current eligible-customer population and validation of intervention costs and effectiveness.
 
-[![Telco Customer Churn Dashboard](dashboards/dashboard_preview.png)](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing)
+## Executive Metrics & Findings
 
-> 🔗 **Interactive Dashboard Link:** [View Live Google Sheets Dashboard](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing)  
-> *Includes dynamic KPI cards, cohort distribution charts, tenure churn trends, and pivot calculation engines.*
+| Metric | Snapshot result | Interpretation |
+| :--- | ---: | :--- |
+| Customer base | 7,043 | Unique subscriber records |
+| Observed churn rate | 26.54% | 1,869 historical churners |
+| Total MRR | $456.12K | $456,116.60 in snapshot monthly charges |
+| High-risk exposed MRR | $183.54K | $183,535.15 flagged at probability >=0.35 |
+| High-risk accounts | 2,357 | Full-snapshot model flags, not new holdout predictions |
+| Month-to-month churn | 42.71% | Compared with 11.27% for one-year and 2.83% for two-year contracts |
+| Churn-associated MRR share | 30.50% | $139,130.85 associated with historical churners |
 
----
+Multiplying churn-associated monthly charges by 12 gives $1,669,570.20 (approximately $1.67M). This is an annualized extrapolation, not measured annual loss. The full-snapshot risk export includes training rows and historical churners.
 
-## 🔍 Key Findings & Statistical Insights
+**Proposed action queue:** filter to high-risk, currently eligible retained customers (`churn = "No"` in this historical dataset), then prioritize tenure **<3 months** and monthly charges **$80–$95 inclusive**. Sort by churn probability descending, then monthly charges descending. This is a proposed business targeting rule, not a statistically optimized or proven highest-impact segment. Do not contact historical churners as if they were active subscribers.
 
-### 1. Revenue Decile Segmentation (`NTILE`)
-Dividing the customer base into 10 spending deciles revealed that churn is heavily concentrated in premium tiers:
-* **Decile 1 ($18.25 – $20.05/mo):** 8.37% churn rate ($1,156.85 lost MRR).
-* **Deciles 6 & 7 ($70.35 – $85.50/mo):** 38.07% and 37.93% churn rate ($20,013.40 and $21,950.15 lost MRR).
-* *Business Takeaway:* Revenue loss is 19x higher in Decile 7 than Decile 1 despite identical cohort headcounts.
+## Dashboard Preview & Interactive Walkthrough
 
-### 2. Cumulative Revenue Loss & Pareto Distribution (`SUM() OVER`)
-Ranking churning accounts by monthly spend demonstrated asymmetric revenue loss:
-* **Top 500 Churners (26.8% of churned accounts):** Represent **$50,400.10 / month** (36.2% of total churn MRR).
-* **Top 1,000 Churners (53.5% of churned accounts):** Represent **$92,804.60 / month** (66.7% of total churn MRR).
-* *Business Takeaway:* Retention teams can protect over a third of lost revenue by focusing operational outreach on the top 500 accounts ($> \$90/\text{mo}$).
+[![Existing Google Sheets dashboard preview](dashboards/dashboard_preview.png)](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing)
 
-### 3. Statistical Distribution Profile (IQR & Median Analysis)
-Parametric and non-parametric comparison between retained and churned cohorts:
-* **Median Monthly Bill:** Retained customers median spend is **$64.43**, while churned customers median spend is **$79.65**.
-* **Interquartile Range (IQR):** Retained users span an IQR of **63.30** ($25.10 Q1 to $88.40 Q3). Churned users cluster tightly with an IQR of **38.05** ($56.15 Q1 to $94.20 Q3).
-* *Business Takeaway:* Churn is tightly concentrated in high-cost tiers; budget users rarely churn.
+[Open the live Google Sheets dashboard](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing). The preview above is the existing spreadsheet dashboard, not a Power BI screenshot.
 
----
+Build/verify these Power BI interactions using [the report setup guide](docs/power_bi_setup.md):
 
-## ⚙️ Automated Churn Risk Scoring Engine
+1. **Baseline view:** clear all slicers and check the executive KPI cards against the table above.
+2. **Dynamic cross-filtering:** select contract and internet-service slicers together. Confirm cards, charts, and the action table respond to both selections. Month-to-month churn should be 42.71% with only that contract filter applied.
+3. **Probability sorting:** sort the action table by `churn_probability` descending; retain customer ID for auditing, but mask it in public screenshots.
+4. **In-cell conditional formatting:** use probability data bars or a color scale and currency formatting for exposure. High risk begins at 0.35; color conveys model flags, not realized outcomes.
+5. **Sliced high-risk view:** combine Month-to-month with the high-risk flag; optionally add the proposed tenure/charge targeting filters. Label all active filters and avoid comparing a sliced total with the full baseline as if they were the same cohort.
 
-A PostgreSQL stored function (`fn_get_customer_churn_risk`) was built to score accounts from 0 to 100 based on contract type, internet service tier, technical support status, payment method, and tenure.
+### Completed Power BI exports
 
-### Retrospective SQL Heuristic Results
-Evaluating the scoring function against actual customer outcomes across all 7,043 accounts:
+**Overall baseline** — 7,043 customers, 26.54% churn, $456.12K MRR, $183.54K exposure.
 
-| Risk Tier | Total Accounts | Churned Count | Actual Churn Rate | Lost MRR |
-| :--- | :--- | :--- | :--- | :--- |
-| **CRITICAL / HIGH RISK** | 2,243 | 1,258 | **56.09%** | **$101,392.20 / mo** |
-| **MODERATE RISK** | 2,000 | 463 | **23.15%** | **$25,817.10 / mo** |
-| **HEALTHY / LOW RISK** | 2,800 | 148 | **5.29%** | **$11,921.55 / mo** |
+[![Power BI overall dashboard](images/dashboard_overview.png)](docs/dashboard_overall.pdf)
 
-*The heuristic identifies **72.9% of all lost MRR** within the High Risk tier, providing an operational filter for proactive retention workflows.*
+[Open overall PDF](docs/dashboard_overall.pdf).
 
----
+**Month-to-month cohort** — 3,875 customers, 42.71% churn, $257.29K MRR, $179.76K exposure. The shown filter is contract only; the cohort contains both risk classes.
+
+[![Power BI Month-to-month dashboard](images/dashboard_sliced_risk.png)](docs/dashboard_month_to_month.pdf)
+
+[Open Month-to-month PDF](docs/dashboard_month_to_month.pdf). Both PNGs render the first page at 200 DPI (4,100 x 2,350 pixels), preserving the supplied layout. Static exports demonstrate the displayed views, not live cross-filtering. See [artifact index](docs/README.md) and [image notes](images/README.md).
+
+## Core DAX Measures
+
+The documented semantic model is a single merged table named **`Customers`**, with exactly one row per customer. Left-join cleaned data to the scoring export by `customer_id`, expanding only the three scoring columns; see the setup guide. The scoring CSV alone does not contain observed `churn` or internet-service fields.
+
+Create each measure separately in Power BI using [dax/measures.dax](dax/measures.dax):
+
+```dax
+Total Customers = DISTINCTCOUNT('Customers'[customer_id])
+
+Churned Customers =
+    CALCULATE(
+        [Total Customers],
+        KEEPFILTERS('Customers'[churn] = "Yes")
+    )
+
+Churn Rate = DIVIDE([Churned Customers], [Total Customers], 0)
+
+Total MRR = SUM('Customers'[monthly_charges])
+
+Exposed MRR = SUM('Customers'[monthly_revenue_at_risk])
+```
+
+Format `Churn Rate` as a percentage (two decimals), counts as integers, and MRR as currency. These measures respect the current slicer context; exposure uses the exported 0.35 flag and is not recomputed by a probability slicer. DAX definitions are authored for the documented schema and have not been executed in Power BI here. Reference: [Microsoft CALCULATE documentation](https://learn.microsoft.com/dax/calculate-function-dax).
+
+## View or Build the Power BI Report
+
+The intended file is `pbix/Telco_Revenue_Risk_Dashboard.pbix`. It is not bundled yet; [pbix/README.md](pbix/README.md) explains the placeholder.
+
+When available, open it in Power BI Desktop, update local CSV source paths in Power Query, and refresh. To build from scratch, follow [docs/power_bi_setup.md](docs/power_bi_setup.md), import the DAX measures, configure the visuals/interactions, and save the report under `pbix/`. No local Excel dashboard is required.
+
+## Repository Structure
+
+The display name is **telco-churn-revenue-risk**; the existing GitHub repository and local folder have not been renamed.
+
+```text
+telco-customer-churn-analysis/
+├── README.md
+├── .gitignore
+├── assets/README.md            # points to canonical images/ exports
+├── images/
+│   ├── README.md
+│   ├── dashboard_overview.png
+│   └── dashboard_sliced_risk.png
+├── docs/
+│   ├── README.md
+│   ├── power_bi_setup.md
+│   ├── dashboard_overall.pdf
+│   └── dashboard_month_to_month.pdf
+├── pbix/
+│   └── README.md               # planned: Telco_Revenue_Risk_Dashboard.pbix
+├── dax/
+│   └── measures.dax
+├── dashboards/
+│   └── dashboard_preview.png   # existing Google Sheets preview
+├── data/
+│   ├── raw/                   # optional ignored source data
+│   ├── processed/
+│   │   └── cleaned_telco_churn.csv
+│   └── predictions/
+│       └── customer_churn_scored.csv  # generated, ignored
+├── models/
+│   └── baseline_logistic_pipeline.joblib  # generated, ignored
+├── python/                    # train_baseline.py, predict.py, requirements.txt
+├── app/                       # main.py, schemas.py, requirements.txt, test_api.py
+├── sql/                       # 01_schema.sql through 05_views_and_procedures.sql
+├── Dockerfile
+└── docker-compose.yml
+```
+
+The scored CSV stays in `data/predictions/` to preserve the working pipeline and its privacy exclusions; do not duplicate it under tracked `data/processed/`.
+
+## Run and Test the Data Pipeline
+
+Use Python 3.12 or newer. From the repository root, with the cleaned CSV available:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r app/requirements.txt
+.\.venv\Scripts\python.exe python/train_baseline.py
+.\.venv\Scripts\python.exe python/predict.py
+.\.venv\Scripts\python.exe -m unittest app.test_api -v
+```
+
+Training validates the schema/IDs, fits only on training rows, prints test metrics and coefficients, and verifies saved-model reload predictions. Scoring writes the ignored audit CSV. Confirm 7,043 unique scored accounts, 2,357 high-risk flags, and $183,535.15 exposure before refreshing the report. No PostgreSQL execution is needed for this CSV workflow. SQL scripts are available for database reconstruction, but contain table drops and a machine-specific import path; inspect them before executing.
 
 ## Python Baseline ML Pipeline
 
@@ -163,59 +247,3 @@ docker compose down
 The service currently has no authentication or TLS configuration; use it locally or behind an appropriately secured deployment boundary. Model probabilities and the chosen cutoff retain the retrospective limitations described above.
 
 ---
-
-## 💡 Strategic Recommendations
-
-1. **Prioritize Top 500 High-Value Accounts:** Focus high-touch support and dedicated account managers on accounts paying $> \$90/\text{mo}$ to secure 36% of exposed MRR.
-2. **First-Year Fiber Optic Support Bundling:** Automatically bundle 90 days of complimentary technical support with month-to-month fiber subscriptions to mitigate early lifecycle attrition.
-3. **Contract Migration Incentives:** Provide targeted discounts ($5–$10/mo) for moving month-to-month accounts to annual contracts.
-
----
-
-## 🛠 Tech Stack & Tools
-
-* **Database Engine:** PostgreSQL 17 (pgAdmin 4)
-* **SQL Capabilities:** Window Functions (`NTILE`, `SUM OVER`, `ROW_NUMBER`), Statistical Aggregations (`PERCENTILE_CONT`, `STDDEV`), PL/pgSQL Stored Functions
-* **Visualization & Reporting:** Google Sheets (Pivot Tables, Calculated Fields, Executive Dashboard)
-* **Machine Learning:** Python, pandas, numpy, scikit-learn, joblib, matplotlib
-* **Serving & Containerization:** FastAPI, Pydantic, Uvicorn, Docker Compose
-* **Version Control:** Git & GitHub
-
----
-
-## 📁 Project Structure
-
-```text
-telco-customer-churn-analysis/
-├── README.md
-├── .gitignore
-├── Dockerfile
-├── docker-compose.yml
-├── app/
-│   ├── main.py
-│   ├── schemas.py
-│   ├── requirements.txt
-│   └── test_api.py
-├── dashboards/
-│   └── dashboard_preview.png
-├── data/
-│   ├── raw/                      # optional source CSV; ignored, not bundled
-│   ├── processed/
-│   │   └── cleaned_telco_churn.csv
-│   └── predictions/
-│       └── customer_churn_scored.csv  # generated locally; ignored
-├── models/
-│   └── baseline_logistic_pipeline.joblib  # generated locally; ignored
-├── python/
-│   ├── requirements.txt
-│   ├── train_baseline.py
-│   └── predict.py
-└── sql/
-    ├── 01_schema.sql
-    ├── 02_cleaning.sql
-    ├── 03_analysis.sql
-    ├── 04_advanced_analytics.sql
-    └── 05_views_and_procedures.sql
-```
-
-The interactive dashboard is hosted directly on [Google Sheets](https://docs.google.com/spreadsheets/d/1txWOi8K12LKhqEunyHWKLgKyrPt0hz5dq3MdSzjqRlI/edit?usp=sharing); the repository includes its PNG preview.

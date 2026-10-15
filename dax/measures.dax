@@ -1,0 +1,23 @@
+// Create each definition separately as a measure on the merged Customers table.
+// One row per customer; see docs/power_bi_setup.md. Not a DAX query batch.
+Total Customers = DISTINCTCOUNT('Customers'[customer_id])
+
+Churned Customers =
+    CALCULATE(
+        [Total Customers],
+        KEEPFILTERS('Customers'[churn] = "Yes")
+    )
+
+Churn Rate = DIVIDE([Churned Customers], [Total Customers], 0)
+
+Total MRR = SUM('Customers'[monthly_charges])
+
+Exposed MRR = SUM('Customers'[monthly_revenue_at_risk])
+
+High Risk Accounts =
+    CALCULATE(
+        [Total Customers],
+        KEEPFILTERS('Customers'[predicted_churn_flag] = 1)
+    )
+
+Exposed MRR Share = DIVIDE([Exposed MRR], [Total MRR], 0)
